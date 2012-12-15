@@ -282,13 +282,18 @@ helper_insert_val_movw_movt_inst(ARMRelocationFactory::DWord pTarget,
 }
 
 static ARMRelocationFactory::DWord
-helper_extract_thumb_movw_movt_addend(ARMRelocationFactory::DWord pTarget)
+helper_extract_thumb_movw_movt_addend(ARMRelocationFactory::DWord pTarget_)
 {
+  union {
+    ARMRelocationFactory::DWord pTarget;
+    uint16_t wTarget[2];
+  };
+  pTarget = pTarget_;
   // Consider the endianness problem, get the target data value from lower
   // and upper 16 bits
   ARMRelocationFactory::DWord val =
-    (*(reinterpret_cast<uint16_t*>(&pTarget)) << 16) |
-    *(reinterpret_cast<uint16_t*>(&pTarget) + 1);
+    (wTarget[0] << 16) |
+    wTarget[1];
 
   // imm16: [19-16][26][14-12][7-0]
   return helper_sign_extend((((val >> 4) & 0xf000U) |
@@ -299,9 +304,14 @@ helper_extract_thumb_movw_movt_addend(ARMRelocationFactory::DWord pTarget)
 }
 
 static ARMRelocationFactory::DWord
-helper_insert_val_thumb_movw_movt_inst(ARMRelocationFactory::DWord pTarget,
+helper_insert_val_thumb_movw_movt_inst(ARMRelocationFactory::DWord pTarget_,
                                        ARMRelocationFactory::DWord pImm)
 {
+  union {
+    ARMRelocationFactory::DWord pTarget;
+    uint16_t wTarget[2];
+  };
+  pTarget = pTarget_;
   ARMRelocationFactory::DWord val;
   // imm16: [19-16][26][14-12][7-0]
   pTarget &= 0xfbf08f00U;
@@ -312,8 +322,8 @@ helper_insert_val_thumb_movw_movt_inst(ARMRelocationFactory::DWord pTarget,
 
   // Consider the endianness problem, write back data from lower and
   // upper 16 bits
-  val = (*(reinterpret_cast<uint16_t*>(&pTarget)) << 16) |
-        *(reinterpret_cast<uint16_t*>(&pTarget) + 1);
+  val = (wTarget[0] << 16) |
+        wTarget[1];
   return val;
 }
 
